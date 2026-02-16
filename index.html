@@ -948,8 +948,11 @@
             renderEvents();
             updateFooter();
             
-            // Add image upload listener
-            document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
+            // Add image upload listener (only if element exists)
+            const imageUpload = document.getElementById('imageUpload');
+            if (imageUpload) {
+                imageUpload.addEventListener('change', handleImageUpload);
+            }
         });
 
         // Image Upload Functions
@@ -1326,6 +1329,13 @@
             uploadedImageUrls = [];
             document.getElementById('imagePreview').innerHTML = '';
             document.getElementById('uploadStatus').textContent = '';
+            
+            // Attach upload listener
+            const imageUpload = document.getElementById('imageUpload');
+            if (imageUpload) {
+                imageUpload.removeEventListener('change', handleImageUpload);
+                imageUpload.addEventListener('change', handleImageUpload);
+            }
         }
 
         function cancelEventForm() {
