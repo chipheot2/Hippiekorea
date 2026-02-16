@@ -695,14 +695,22 @@
             text-align: center;
             margin-bottom: 20px;
         }
+
+        #imagePreview img {
+            transition: transform 0.2s ease;
+        }
+
+        #imagePreview img:hover {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
     <header>
         <button class="admin-btn" onclick="showAdminLogin()">Admin Panel</button>
         <div class="container">
-            <h1>Hippiekorea Event Calendar</h1>
-            <p class="tagline">Discover beautiful Korea and book unforgettable moments</p>
+            <h1>Event Experiences</h1>
+            <p class="tagline">Discover and book unforgettable moments</p>
         </div>
     </header>
 
@@ -861,9 +869,16 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Image URLs (one per line)</label>
-                        <textarea id="eventImages" placeholder="https://example.com/image1.jpg
-https://example.com/image2.jpg"></textarea>
+                        <label>Event Images</label>
+                        <div style="margin-bottom: 10px;">
+                            <input type="file" id="imageUpload" accept="image/*" multiple style="display: none;">
+                            <button type="button" class="btn-secondary" onclick="document.getElementById('imageUpload').click()">
+                                📤 Upload Images
+                            </button>
+                            <span id="uploadStatus" style="margin-left: 10px; color: var(--text-light);"></span>
+                        </div>
+                        <div id="imagePreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px;"></div>
+                        <input type="hidden" id="eventImages">
                     </div>
 
                     <button type="submit" class="submit-btn">Save Event</button>
@@ -901,7 +916,7 @@ https://example.com/image2.jpg"></textarea>
             <div class="footer-contact">
                 <div class="contact-item">
                     <span>📧</span>
-                    <span id="footerEmail">your-email@example.com</span>
+                    <span id="footerEmail"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="8cf5e3f9fea1e9e1ede5e0cce9f4ede1fce0e9a2efe3e1">[email&#160;protected]</a></span>
                 </div>
                 <div class="contact-item">
                     <span>📱</span>
@@ -914,20 +929,107 @@ https://example.com/image2.jpg"></textarea>
         </div>
     </footer>
 
-    <script>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+        // Cloudinary Configuration
+        const CLOUDINARY_CLOUD_NAME = 'dylvhjmhm';
+        const CLOUDINARY_API_KEY = '157121528985942';
+        
         // Data Storage
         const ADMIN_PASSWORD = 'admin123'; // Change this to your desired password
         let events = JSON.parse(localStorage.getItem('events')) || [];
         let bookings = JSON.parse(localStorage.getItem('bookings')) || [];
         let currentMonth = new Date();
         let isAdminLoggedIn = false;
+        let uploadedImageUrls = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             renderCalendar();
             renderEvents();
             updateFooter();
+            
+            // Add image upload listener
+            document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
         });
+
+        // Image Upload Functions
+        async function handleImageUpload(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+            
+            const statusEl = document.getElementById('uploadStatus');
+            statusEl.textContent = `Uploading ${files.length} image(s)...`;
+            statusEl.style.color = 'var(--primary)';
+            
+            try {
+                for (let file of files) {
+                    const url = await uploadToCloudinary(file);
+                    uploadedImageUrls.push(url);
+                    addImagePreview(url);
+                }
+                
+                document.getElementById('eventImages').value = uploadedImageUrls.join('\n');
+                statusEl.textContent = `✓ ${uploadedImageUrls.length} image(s) uploaded`;
+                statusEl.style.color = 'var(--success)';
+                
+                setTimeout(() => {
+                    statusEl.textContent = '';
+                }, 3000);
+                
+            } catch (error) {
+                statusEl.textContent = '✗ Upload failed. Please try again.';
+                statusEl.style.color = 'var(--danger)';
+                console.error('Upload error:', error);
+            }
+        }
+
+        async function uploadToCloudinary(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'events_upload-Hippiekorea'); // Your custom unsigned preset
+            formData.append('cloud_name', CLOUDINARY_CLOUD_NAME);
+            
+            const response = await fetch(
+                `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                {
+                    method: 'POST',
+                    body: formData
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error('Upload failed');
+            }
+            
+            const data = await response.json();
+            return data.secure_url;
+        }
+
+        function addImagePreview(url) {
+            const preview = document.getElementById('imagePreview');
+            const imgContainer = document.createElement('div');
+            imgContainer.style.position = 'relative';
+            imgContainer.innerHTML = `
+                <img src="${url}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px;">
+                <button type="button" onclick="removeImage('${url}')" 
+                        style="position: absolute; top: 5px; right: 5px; background: var(--danger); 
+                               color: white; border: none; border-radius: 50%; width: 25px; height: 25px; 
+                               cursor: pointer; font-size: 14px; line-height: 1;">×</button>
+            `;
+            preview.appendChild(imgContainer);
+        }
+
+        function removeImage(url) {
+            uploadedImageUrls = uploadedImageUrls.filter(u => u !== url);
+            document.getElementById('eventImages').value = uploadedImageUrls.join('\n');
+            renderImagePreviews();
+        }
+
+        function renderImagePreviews() {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = '';
+            uploadedImageUrls.forEach(url => addImagePreview(url));
+        }
 
         // Calendar Functions
         function renderCalendar() {
@@ -985,7 +1087,9 @@ https://example.com/image2.jpg"></textarea>
                 
                 if (dayEvents.length > 0) {
                     const event = dayEvents[0];
-                    const bookedSlots = bookings.filter(b => b.eventId === event.id).length;
+                    const bookedSlots = bookings
+                        .filter(b => b.eventId === event.id)
+                        .reduce((sum, b) => sum + parseInt(b.numPeople), 0);
                     const availableSlots = event.totalSlots - bookedSlots;
                     
                     if (availableSlots > 0) {
@@ -1030,7 +1134,9 @@ https://example.com/image2.jpg"></textarea>
             }
 
             grid.innerHTML = upcomingEvents.map(event => {
-                const bookedSlots = bookings.filter(b => b.eventId === event.id).length;
+                const bookedSlots = bookings
+                    .filter(b => b.eventId === event.id)
+                    .reduce((sum, b) => sum + parseInt(b.numPeople), 0);
                 const availableSlots = event.totalSlots - bookedSlots;
                 const images = event.images || [];
                 
@@ -1117,8 +1223,15 @@ https://example.com/image2.jpg"></textarea>
         // Booking Functions
         function openBookingModal(eventId) {
             const event = events.find(e => e.id === eventId);
+            const bookedSlots = bookings
+                .filter(b => b.eventId === eventId)
+                .reduce((sum, b) => sum + parseInt(b.numPeople), 0);
+            const availableSlots = event.totalSlots - bookedSlots;
+            
             document.getElementById('modalEventName').textContent = `Book: ${event.name}`;
             document.getElementById('bookingEventId').value = eventId;
+            document.getElementById('numPeople').max = availableSlots;
+            document.getElementById('numPeople').placeholder = `Max ${availableSlots} people available`;
             document.getElementById('bookingModal').classList.add('active');
         }
 
@@ -1130,14 +1243,29 @@ https://example.com/image2.jpg"></textarea>
         function submitBooking(e) {
             e.preventDefault();
 
+            const eventId = document.getElementById('bookingEventId').value;
+            const event = events.find(e => e.id === eventId);
+            const numPeople = parseInt(document.getElementById('numPeople').value);
+            
+            // Check if enough slots available
+            const bookedSlots = bookings
+                .filter(b => b.eventId === eventId)
+                .reduce((sum, b) => sum + parseInt(b.numPeople), 0);
+            const availableSlots = event.totalSlots - bookedSlots;
+            
+            if (numPeople > availableSlots) {
+                alert(`Sorry, only ${availableSlots} slots available. Please reduce the number of people.`);
+                return;
+            }
+
             const booking = {
                 id: Date.now().toString(),
-                eventId: document.getElementById('bookingEventId').value,
+                eventId: eventId,
                 fullName: document.getElementById('fullName').value,
                 nationality: document.getElementById('nationality').value,
                 email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
-                numPeople: document.getElementById('numPeople').value,
+                numPeople: numPeople,
                 professional: document.getElementById('professional').value,
                 bookingDate: new Date().toISOString()
             };
@@ -1195,6 +1323,9 @@ https://example.com/image2.jpg"></textarea>
             document.getElementById('eventSlots').value = '';
             document.getElementById('eventDescription').value = '';
             document.getElementById('eventImages').value = '';
+            uploadedImageUrls = [];
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('uploadStatus').textContent = '';
         }
 
         function cancelEventForm() {
@@ -1241,7 +1372,9 @@ https://example.com/image2.jpg"></textarea>
         function renderAdminEvents() {
             const tbody = document.getElementById('eventsTableBody');
             tbody.innerHTML = events.map(event => {
-                const bookedSlots = bookings.filter(b => b.eventId === event.id).length;
+                const bookedSlots = bookings
+                    .filter(b => b.eventId === event.id)
+                    .reduce((sum, b) => sum + parseInt(b.numPeople), 0);
                 return `
                     <tr>
                         <td>${event.name}</td>
@@ -1267,7 +1400,11 @@ https://example.com/image2.jpg"></textarea>
             document.getElementById('eventPrice').value = event.price;
             document.getElementById('eventSlots').value = event.totalSlots;
             document.getElementById('eventDescription').value = event.description || '';
-            document.getElementById('eventImages').value = (event.images || []).join('\n');
+            
+            // Load existing images
+            uploadedImageUrls = event.images || [];
+            document.getElementById('eventImages').value = uploadedImageUrls.join('\n');
+            renderImagePreviews();
             
             document.getElementById('eventForm').classList.remove('hidden');
             document.getElementById('eventsList').classList.add('hidden');
@@ -1346,10 +1483,4 @@ https://example.com/image2.jpg"></textarea>
         }
 
         function updateFooter() {
-            // You can customize these
-            document.getElementById('footerEmail').textContent = 'contact@eventexperiences.com';
-            document.getElementById('footerPhone').textContent = '+1 (555) 123-4567';
-        }
-    </script>
-</body>
-</html>
+            // You can custom
