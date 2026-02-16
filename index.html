@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Booking System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2C5F4F;
+            --primary-dark: #1a3d2f;
+            --accent: #D4A373;
+            --bg-light: #FAF8F5;
+            --text-dark: #1a1a1a;
+            --text-light: #666;
+            --success: #4CAF50;
+            --danger: #E74C3C;
+            --border: #E0DDD8;
+            --shadow: rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></svg>');
+            background-size: 30px 30px;
+            animation: drift 60s linear infinite;
+        }
+
+        @keyframes drift {
+            from { transform: translate(0, 0); }
+            to { transform: translate(30px, 30px); }
+        }
+
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+            position: relative;
+            letter-spacing: 2px;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .admin-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .admin-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Calendar Section */
+        .calendar-section {
+            padding: 60px 20px;
+        }
+
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-light);
+            margin-bottom: 40px;
+        }
+
+        .calendar {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px var(--shadow);
+            margin-bottom: 40px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .calendar-nav {
+            background: none;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-nav:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .calendar-month {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .calendar-day-name {
+            text-align: center;
+            font-weight: 600;
+            padding: 15px 5px;
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            position: relative;
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+            cursor: default;
+        }
+
+        .calendar-day.available {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-color: var(--success);
+        }
+
+        .calendar-day.available:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .calendar-day.full {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            border-color: #bdbdbd;
+            cursor: not-allowed;
+        }
+
+        .day-number {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .day-info {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        .event-indicator {
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
+            border-radius: 50%;
+            margin-top: 5px;
+        }
+
+        /* Events List */
+        .events-section {
+            padding: 40px 20px;
+        }
+
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .event-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .event-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .event-images {
+            height: 250px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .event-image.active {
+            display: block;
+        }
+
+        .image-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .image-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .image-dot.active {
+            background: white;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        .event-content {
+            padding: 25px;
+        }
+
+        .event-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .event-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .event-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .event-description {
+            color: var(--text-dark);
+            margin-bottom: 20px;
+            line-height: 1.7;
+        }
+
+        .event-slots {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .slot-info {
+            text-align: center;
+        }
+
+        .slot-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .slot-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .book-btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .book-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(44, 95, 79, 0.3);
+        }
+
+        .book-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            background: var(--primary);
+            color: white;
+            padding: 30px;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .modal-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            line-height: 1;
+            transition: all 0.3s ease;
+        }
+
+        .close-modal:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        label.required::after {
+            content: '*';
+            color: var(--danger);
+            margin-left: 5px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: 'Manrope', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(44, 95, 79, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        /* Admin Panel */
+        .admin-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px var(--shadow);
+            margin: 40px 20px;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .btn-secondary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(212, 163, 115, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .events-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .events-table th {
+            background: var(--bg-light);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .events-table td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .events-table tr:hover {
+            background: var(--bg-light);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary-dark);
+            color: white;
+            padding: 40px 20px;
+            margin-top: 80px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 40px;
+        }
+
+        .footer-info h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .footer-contact {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.9;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+        }
+
+        .legend-color.available {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        }
+
+        .legend-color.full {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+        }
+
+        .legend-color.no-event {
+            background: white;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .calendar-grid {
+                gap: 5px;
+            }
+
+            .events-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-btn {
+                position: static;
+                margin-top: 20px;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .success-message {
+            background: var(--success);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <button class="admin-btn" onclick="showAdminLogin()">Admin Panel</button>
+        <div class="container">
+            <h1>Event Experiences</h1>
+            <p class="tagline">Discover and book unforgettable moments</p>
+        </div>
+    </header>
+
+    <!-- Calendar Section -->
+    <section class="calendar-section">
+        <div class="container">
+            <h2 class="section-title">Event Calendar</h2>
+            <p class="section-subtitle">Browse available dates and book your experience</p>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color available"></div>
+                    <span>Available</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color full"></div>
+                    <span>Fully Booked</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color no-event"></div>
+                    <span>No Event</span>
+                </div>
+            </div>
+
+            <div class="calendar">
+                <div class="calendar-header">
+                    <button class="calendar-nav" onclick="changeMonth(-1)">← Previous</button>
+                    <h3 class="calendar-month" id="currentMonth"></h3>
+                    <button class="calendar-nav" onclick="changeMonth(1)">Next →</button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Events Section -->
+    <section class="events-section">
+        <div class="container">
+            <h2 class="section-title">Upcoming Events</h2>
+            <div class="events-grid" id="eventsGrid"></div>
+        </div>
+    </section>
+
+    <!-- Booking Modal -->
+    <div class="modal" id="bookingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalEventName">Book Your Experience</h3>
+                <button class="close-modal" onclick="closeBookingModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="bookingForm" onsubmit="submitBooking(event)">
+                    <input type="hidden" id="bookingEventId">
+                    
+                    <div class="form-group">
+                        <label class="required">Full Name</label>
+                        <input type="text" id="fullName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">Nationality</label>
+                        <input type="text" id="nationality" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">Phone Number</label>
+                        <input type="tel" id="phone" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">Number of People (including children)</label>
+                        <input type="number" id="numPeople" min="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Professional / Occupation</label>
+                        <input type="text" id="professional">
+                    </div>
+
+                    <button type="submit" class="submit-btn">Confirm Booking</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div class="modal" id="adminLoginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Admin Login</h3>
+                <button class="close-modal" onclick="closeAdminLogin()">×</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="adminLogin(event)">
+                    <div class="form-group">
+                        <label class="required">Password</label>
+                        <input type="password" id="adminPassword" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-panel hidden" id="adminPanel">
+        <div class="container">
+            <div class="admin-header">
+                <h2 class="section-title">Admin Panel</h2>
+                <div>
+                    <button class="btn-secondary" onclick="showAddEventForm()">+ Add New Event</button>
+                    <button class="btn-secondary" onclick="exportBookings()" style="margin-left: 10px;">📥 Export Bookings</button>
+                    <button class="btn-danger" onclick="logout()" style="margin-left: 10px;">Logout</button>
+                </div>
+            </div>
+
+            <!-- Add/Edit Event Form -->
+            <div class="hidden" id="eventForm">
+                <h3>Add/Edit Event</h3>
+                <form onsubmit="saveEvent(event)">
+                    <input type="hidden" id="editEventId">
+                    
+                    <div class="form-group">
+                        <label class="required">Event Name</label>
+                        <input type="text" id="eventName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">Date</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">Location</label>
+                        <input type="text" id="eventLocation" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">Price</label>
+                        <input type="number" id="eventPrice" step="0.01" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">Total Slots</label>
+                        <input type="number" id="eventSlots" min="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="eventDescription"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Image URLs (one per line)</label>
+                        <textarea id="eventImages" placeholder="https://example.com/image1.jpg
+https://example.com/image2.jpg"></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Save Event</button>
+                    <button type="button" class="btn-danger" onclick="cancelEventForm()" style="margin-top: 10px; width: 100%;">Cancel</button>
+                </form>
+            </div>
+
+            <!-- Events List -->
+            <div id="eventsList">
+                <h3>Manage Events</h3>
+                <table class="events-table">
+                    <thead>
+                        <tr>
+                            <th>Event Name</th>
+                            <th>Date</th>
+                            <th>Location</th>
+                            <th>Slots</th>
+                            <th>Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>Get in Touch</h3>
+                <p>Have questions? We're here to help make your experience unforgettable.</p>
+            </div>
+            <div class="footer-contact">
+                <div class="contact-item">
+                    <span>📧</span>
+                    <span id="footerEmail">your-email@example.com</span>
+                </div>
+                <div class="contact-item">
+                    <span>📱</span>
+                    <span id="footerPhone">+1 234 567 8900</span>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Event Experiences. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Data Storage
+        const ADMIN_PASSWORD = 'admin123'; // Change this to your desired password
+        let events = JSON.parse(localStorage.getItem('events')) || [];
+        let bookings = JSON.parse(localStorage.getItem('bookings')) || [];
+        let currentMonth = new Date();
+        let isAdminLoggedIn = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCalendar();
+            renderEvents();
+            updateFooter();
+        });
+
+        // Calendar Functions
+        function renderCalendar() {
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            
+            document.getElementById('currentMonth').textContent = 
+                currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            // Day names
+            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+                const dayName = document.createElement('div');
+                dayName.className = 'calendar-day-name';
+                dayName.textContent = day;
+                grid.appendChild(dayName);
+            });
+
+            // Previous month days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = createCalendarDay(daysInPrevMonth - i, true);
+                grid.appendChild(day);
+            }
+
+            // Current month days
+            for (let i = 1; i <= daysInMonth; i++) {
+                const day = createCalendarDay(i, false);
+                grid.appendChild(day);
+            }
+
+            // Next month days
+            const totalCells = grid.children.length - 7;
+            const remainingCells = 42 - totalCells;
+            for (let i = 1; i <= remainingCells; i++) {
+                const day = createCalendarDay(i, true);
+                grid.appendChild(day);
+            }
+        }
+
+        function createCalendarDay(dayNum, otherMonth) {
+            const day = document.createElement('div');
+            day.className = 'calendar-day';
+            
+            if (otherMonth) {
+                day.classList.add('other-month');
+            } else {
+                const dateStr = formatDate(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), dayNum));
+                const dayEvents = events.filter(e => e.date === dateStr);
+                
+                if (dayEvents.length > 0) {
+                    const event = dayEvents[0];
+                    const bookedSlots = bookings.filter(b => b.eventId === event.id).length;
+                    const availableSlots = event.totalSlots - bookedSlots;
+                    
+                    if (availableSlots > 0) {
+                        day.classList.add('available');
+                        day.onclick = () => scrollToEvent(event.id);
+                    } else {
+                        day.classList.add('full');
+                    }
+
+                    const indicator = document.createElement('div');
+                    indicator.className = 'event-indicator';
+                    day.appendChild(indicator);
+                }
+            }
+
+            const number = document.createElement('div');
+            number.className = 'day-number';
+            number.textContent = dayNum;
+            day.insertBefore(number, day.firstChild);
+
+            return day;
+        }
+
+        function changeMonth(delta) {
+            currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + delta, 1);
+            renderCalendar();
+        }
+
+        // Events Functions
+        function renderEvents() {
+            const grid = document.getElementById('eventsGrid');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const upcomingEvents = events
+                .filter(e => new Date(e.date) >= today)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if (upcomingEvents.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; color: var(--text-light);">No upcoming events at the moment.</p>';
+                return;
+            }
+
+            grid.innerHTML = upcomingEvents.map(event => {
+                const bookedSlots = bookings.filter(b => b.eventId === event.id).length;
+                const availableSlots = event.totalSlots - bookedSlots;
+                const images = event.images || [];
+                
+                return `
+                    <div class="event-card" id="event-${event.id}">
+                        ${images.length > 0 ? `
+                            <div class="event-images">
+                                ${images.map((img, idx) => `
+                                    <img src="${img}" alt="${event.name}" class="event-image ${idx === 0 ? 'active' : ''}" 
+                                         onerror="this.src='https://via.placeholder.com/400x250?text=Event+Image'">
+                                `).join('')}
+                                ${images.length > 1 ? `
+                                    <div class="image-dots">
+                                        ${images.map((_, idx) => `
+                                            <div class="image-dot ${idx === 0 ? 'active' : ''}" 
+                                                 onclick="changeEventImage('${event.id}', ${idx})"></div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                        <div class="event-content">
+                            <h3 class="event-name">${event.name}</h3>
+                            <div class="event-meta">
+                                <div class="event-meta-item">
+                                    <span>📅</span>
+                                    <span>${formatDisplayDate(event.date)}</span>
+                                </div>
+                                <div class="event-meta-item">
+                                    <span>📍</span>
+                                    <span>${event.location}</span>
+                                </div>
+                                <div class="event-meta-item">
+                                    <span>💰</span>
+                                    <span>$${event.price}</span>
+                                </div>
+                            </div>
+                            <p class="event-description">${event.description || 'Join us for an amazing experience!'}</p>
+                            <div class="event-slots">
+                                <div class="slot-info">
+                                    <div class="slot-number">${event.totalSlots}</div>
+                                    <div class="slot-label">Total Slots</div>
+                                </div>
+                                <div class="slot-info">
+                                    <div class="slot-number">${availableSlots}</div>
+                                    <div class="slot-label">Available</div>
+                                </div>
+                                <div class="slot-info">
+                                    <div class="slot-number">${bookedSlots}</div>
+                                    <div class="slot-label">Booked</div>
+                                </div>
+                            </div>
+                            <button class="book-btn" onclick="openBookingModal('${event.id}')" 
+                                    ${availableSlots === 0 ? 'disabled' : ''}>
+                                ${availableSlots === 0 ? 'Fully Booked' : 'Book Now'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function changeEventImage(eventId, index) {
+            const card = document.getElementById(`event-${eventId}`);
+            const images = card.querySelectorAll('.event-image');
+            const dots = card.querySelectorAll('.image-dot');
+
+            images.forEach((img, idx) => {
+                img.classList.toggle('active', idx === index);
+            });
+
+            dots.forEach((dot, idx) => {
+                dot.classList.toggle('active', idx === index);
+            });
+        }
+
+        function scrollToEvent(eventId) {
+            const element = document.getElementById(`event-${eventId}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // Booking Functions
+        function openBookingModal(eventId) {
+            const event = events.find(e => e.id === eventId);
+            document.getElementById('modalEventName').textContent = `Book: ${event.name}`;
+            document.getElementById('bookingEventId').value = eventId;
+            document.getElementById('bookingModal').classList.add('active');
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').classList.remove('active');
+            document.getElementById('bookingForm').reset();
+        }
+
+        function submitBooking(e) {
+            e.preventDefault();
+
+            const booking = {
+                id: Date.now().toString(),
+                eventId: document.getElementById('bookingEventId').value,
+                fullName: document.getElementById('fullName').value,
+                nationality: document.getElementById('nationality').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                numPeople: document.getElementById('numPeople').value,
+                professional: document.getElementById('professional').value,
+                bookingDate: new Date().toISOString()
+            };
+
+            bookings.push(booking);
+            localStorage.setItem('bookings', JSON.stringify(bookings));
+
+            // Send to Google Sheets (you'll need to set this up)
+            sendToGoogleSheets(booking);
+
+            alert('Booking confirmed! You will receive a confirmation email shortly.');
+            closeBookingModal();
+            renderCalendar();
+            renderEvents();
+        }
+
+        // Admin Functions
+        function showAdminLogin() {
+            document.getElementById('adminLoginModal').classList.add('active');
+        }
+
+        function closeAdminLogin() {
+            document.getElementById('adminLoginModal').classList.remove('active');
+        }
+
+        function adminLogin(e) {
+            e.preventDefault();
+            const password = document.getElementById('adminPassword').value;
+            
+            if (password === ADMIN_PASSWORD) {
+                isAdminLoggedIn = true;
+                closeAdminLogin();
+                document.getElementById('adminPanel').classList.remove('hidden');
+                renderAdminEvents();
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            } else {
+                alert('Incorrect password!');
+            }
+        }
+
+        function logout() {
+            isAdminLoggedIn = false;
+            document.getElementById('adminPanel').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showAddEventForm() {
+            document.getElementById('eventForm').classList.remove('hidden');
+            document.getElementById('eventsList').classList.add('hidden');
+            document.getElementById('editEventId').value = '';
+            document.getElementById('eventName').value = '';
+            document.getElementById('eventDate').value = '';
+            document.getElementById('eventLocation').value = '';
+            document.getElementById('eventPrice').value = '';
+            document.getElementById('eventSlots').value = '';
+            document.getElementById('eventDescription').value = '';
+            document.getElementById('eventImages').value = '';
+        }
+
+        function cancelEventForm() {
+            document.getElementById('eventForm').classList.add('hidden');
+            document.getElementById('eventsList').classList.remove('hidden');
+        }
+
+        function saveEvent(e) {
+            e.preventDefault();
+
+            const eventId = document.getElementById('editEventId').value;
+            const images = document.getElementById('eventImages').value
+                .split('\n')
+                .map(url => url.trim())
+                .filter(url => url.length > 0);
+
+            const eventData = {
+                id: eventId || Date.now().toString(),
+                name: document.getElementById('eventName').value,
+                date: document.getElementById('eventDate').value,
+                location: document.getElementById('eventLocation').value,
+                price: parseFloat(document.getElementById('eventPrice').value),
+                totalSlots: parseInt(document.getElementById('eventSlots').value),
+                description: document.getElementById('eventDescription').value,
+                images: images
+            };
+
+            if (eventId) {
+                const index = events.findIndex(e => e.id === eventId);
+                events[index] = eventData;
+            } else {
+                events.push(eventData);
+            }
+
+            localStorage.setItem('events', JSON.stringify(events));
+            
+            cancelEventForm();
+            renderAdminEvents();
+            renderCalendar();
+            renderEvents();
+            alert('Event saved successfully!');
+        }
+
+        function renderAdminEvents() {
+            const tbody = document.getElementById('eventsTableBody');
+            tbody.innerHTML = events.map(event => {
+                const bookedSlots = bookings.filter(b => b.eventId === event.id).length;
+                return `
+                    <tr>
+                        <td>${event.name}</td>
+                        <td>${formatDisplayDate(event.date)}</td>
+                        <td>${event.location}</td>
+                        <td>${event.totalSlots - bookedSlots} / ${event.totalSlots}</td>
+                        <td>$${event.price}</td>
+                        <td>
+                            <button class="btn-secondary" onclick="editEvent('${event.id}')" style="margin-right: 10px;">Edit</button>
+                            <button class="btn-danger" onclick="deleteEvent('${event.id}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function editEvent(eventId) {
+            const event = events.find(e => e.id === eventId);
+            document.getElementById('editEventId').value = event.id;
+            document.getElementById('eventName').value = event.name;
+            document.getElementById('eventDate').value = event.date;
+            document.getElementById('eventLocation').value = event.location;
+            document.getElementById('eventPrice').value = event.price;
+            document.getElementById('eventSlots').value = event.totalSlots;
+            document.getElementById('eventDescription').value = event.description || '';
+            document.getElementById('eventImages').value = (event.images || []).join('\n');
+            
+            document.getElementById('eventForm').classList.remove('hidden');
+            document.getElementById('eventsList').classList.add('hidden');
+        }
+
+        function deleteEvent(eventId) {
+            if (confirm('Are you sure you want to delete this event?')) {
+                events = events.filter(e => e.id !== eventId);
+                localStorage.setItem('events', JSON.stringify(events));
+                renderAdminEvents();
+                renderCalendar();
+                renderEvents();
+            }
+        }
+
+        function exportBookings() {
+            if (bookings.length === 0) {
+                alert('No bookings to export!');
+                return;
+            }
+
+            // Create CSV
+            const headers = ['Booking ID', 'Event Name', 'Full Name', 'Nationality', 'Email', 'Phone', 'Number of People', 'Professional', 'Booking Date'];
+            const rows = bookings.map(booking => {
+                const event = events.find(e => e.id === booking.eventId);
+                return [
+                    booking.id,
+                    event ? event.name : 'N/A',
+                    booking.fullName,
+                    booking.nationality,
+                    booking.email,
+                    booking.phone,
+                    booking.numPeople,
+                    booking.professional || 'N/A',
+                    new Date(booking.bookingDate).toLocaleString()
+                ];
+            });
+
+            let csv = headers.join(',') + '\n';
+            rows.forEach(row => {
+                csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+            });
+
+            // Download
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bookings-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        // Google Sheets Integration (placeholder)
+        function sendToGoogleSheets(booking) {
+            // You'll need to set up Google Sheets API or use a service like Apps Script
+            // For now, this is a placeholder
+            console.log('Sending to Google Sheets:', booking);
+        }
+
+        // Utility Functions
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatDisplayDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+
+        function updateFooter() {
+            // You can customize these
+            document.getElementById('footerEmail').textContent = 'contact@eventexperiences.com';
+            document.getElementById('footerPhone').textContent = '+1 (555) 123-4567';
+        }
+    </script>
+</body>
+</html>
