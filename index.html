@@ -944,14 +944,24 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            renderCalendar();
-            renderEvents();
-            updateFooter();
-            
-            // Add image upload listener (only if element exists)
-            const imageUpload = document.getElementById('imageUpload');
-            if (imageUpload) {
-                imageUpload.addEventListener('change', handleImageUpload);
+            try {
+                console.log('Initializing website...');
+                renderCalendar();
+                console.log('Calendar rendered');
+                renderEvents();
+                console.log('Events rendered');
+                updateFooter();
+                console.log('Footer updated');
+                
+                // Add image upload listener (only if element exists)
+                const imageUpload = document.getElementById('imageUpload');
+                if (imageUpload) {
+                    imageUpload.addEventListener('change', handleImageUpload);
+                    console.log('Image upload listener added');
+                }
+                console.log('Initialization complete!');
+            } catch (error) {
+                console.error('Error during initialization:', error);
             }
         });
 
@@ -1493,4 +1503,10 @@
         }
 
         function updateFooter() {
-            // You can custom
+            // You can customize these
+            document.getElementById('footerEmail').textContent = 'contact@eventexperiences.com';
+            document.getElementById('footerPhone').textContent = '+1 (555) 123-4567';
+        }
+    </script>
+</body>
+</html>
